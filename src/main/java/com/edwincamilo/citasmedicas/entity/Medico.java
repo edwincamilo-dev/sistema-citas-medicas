@@ -25,10 +25,10 @@ public class Medico {
     @Column(name = "tipo_documento", nullable = false)
     private TipoDocumentoMedico tipoDocumento;
 
-    @Column(name = "documento_identidad", nullable = false, length = 20)
+    @Column(name = "documento_identidad", nullable = false, length = 20, unique = true)
     private String documentoIdentidad;
 
-    @Column(name = "tarjeta_profesional", nullable = false, length = 20)
+    @Column(name = "tarjeta_profesional", nullable = false, length = 20, unique = true)
     private String tarjetaProfesional;
 
     @Column(name = "nombres", nullable = false, length = 100)
@@ -43,14 +43,14 @@ public class Medico {
     @Column(name = "telefono_alternativo", nullable = true, length = 20)
     private String telefonoAlternativo;
 
-    @Column(name = "correo_electronico", nullable = false, length = 100)
+    @Column(name = "correo_electronico", nullable = false, length = 100, unique = true)
     private String correoElectronico;
 
-    @Column(name = "correo_electronico_alternativo", nullable = true, length = 100)
+    @Column(name = "correo_electronico_alternativo", nullable = true, length = 100, unique = true)
     private String correoElectronicoAlternativo;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_especialidad",nullable = false)
+    @JoinColumn(name = "id_especialidad", nullable = false)
     private Especialidad especialidad;
 
     @CreationTimestamp

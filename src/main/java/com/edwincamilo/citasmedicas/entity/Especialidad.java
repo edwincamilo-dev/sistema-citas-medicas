@@ -20,7 +20,7 @@ public class Especialidad {
     @Column(name = "id_especialidad")
     private Long id;
 
-    @Column(name = "nombre_especialidad", nullable = false, length = 50)
+    @Column(name = "nombre_especialidad", nullable = false, length = 50, unique = true)
     private String nombre;
 
     @Column(name = "descripcion", nullable = true, length = 500)
