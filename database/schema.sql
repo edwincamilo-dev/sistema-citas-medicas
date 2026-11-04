@@ -36,88 +36,103 @@
 -- * El correo es único por tabla, no entre paciente y médico: un médico y
 --   un paciente podrían tener el mismo correo. Se resolverá en la Fase 8
 --   (Spring Security).
--- * Una cita CANCELADA sigue ocupando su horario en los UNIQUE compuestos.
+-- * Una cita CANCELADA sigue ocupando su horario en los UNIQUE compuestos,
+--   así que nadie más puede tomar ese horario. Solución planeada (Fase 5):
+--   Columna generada que valga 1 si la cita está activa y NULL si está
+--   CANCELADA, e incluirla en uq_medico_cita y uq_paciente_cita.
+--   Como un UNIQUE permite varios NULL, las canceladas dejan de bloquear.
+--   Validación previa en el servicio para dar un mensaje claro; el UNIQUE
+--   ueda como garantía ante peticiones simultáneas.
+--   Las citas no se borran (borrado lógico por estado).
+-- * No existe dónde registrar por qué se canceló una cita. Pendiente agregar
+--   la columna motivo_cancelacion (NULL, solo aplica a canceladas) en la Fase 5.
 -- * Nombres de restricciones UNIQUE con patrones mixtos (pendiente unificar).
 --
 -- Orden de creación (por dependencias de llaves foráneas):
 --   especialidad -> medico, paciente -> cita
 -- =====================================================================
 
-CREATE DATABASE citas_medicas;
-USE citas_medicas;
+CREATE
+DATABASE citas_medicas;
+USE
+citas_medicas;
 
 -- ---------------------------------------------------------------------
 -- ESPECIALIDAD: catálogo administrado por la clínica
 -- ---------------------------------------------------------------------
-CREATE TABLE `especialidad` (
-  `id_especialidad` bigint NOT NULL AUTO_INCREMENT,
-  `nombre_especialidad` varchar(50) NOT NULL,
-  `descripcion` varchar(500) DEFAULT NULL,
-  `fecha_creacion` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id_especialidad`),
-  UNIQUE KEY `uq_especialidad_nombre` (`nombre_especialidad`)
+CREATE TABLE `especialidad`
+(
+    `id_especialidad`     bigint      NOT NULL AUTO_INCREMENT,
+    `nombre_especialidad` varchar(50) NOT NULL,
+    `descripcion`         varchar(500)         DEFAULT NULL,
+    `fecha_creacion`      datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id_especialidad`),
+    UNIQUE KEY `uq_especialidad_nombre` (`nombre_especialidad`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ---------------------------------------------------------------------
 -- MEDICO: cada médico pertenece a una y solo una especialidad (N:1)
 -- ---------------------------------------------------------------------
-CREATE TABLE `medico` (
-  `id_medico` bigint NOT NULL AUTO_INCREMENT,
-  `tipo_documento` enum('CC','PAS','PPT') NOT NULL,
-  `documento_identidad` varchar(20) NOT NULL,
-  `tarjeta_profesional` varchar(20) NOT NULL,
-  `nombres` varchar(100) NOT NULL,
-  `apellidos` varchar(100) NOT NULL,
-  `telefono` varchar(20) NOT NULL,
-  `telefono_alternativo` varchar(20) DEFAULT NULL,
-  `correo_electronico` varchar(100) NOT NULL,
-  `correo_electronico_alternativo` varchar(100) DEFAULT NULL,
-  `fecha_creacion` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `id_especialidad` bigint NOT NULL,
-  PRIMARY KEY (`id_medico`),
-  UNIQUE KEY `uq_documento_identidad` (`documento_identidad`),
-  UNIQUE KEY `uq_tarjeta_profesional` (`tarjeta_profesional`),
-  UNIQUE KEY `uq_correo_electronico` (`correo_electronico`),
-  UNIQUE KEY `uq_correo_electronico_alternativo` (`correo_electronico_alternativo`),
-  KEY `fk_medico_especialidad` (`id_especialidad`),
-  CONSTRAINT `fk_medico_especialidad` FOREIGN KEY (`id_especialidad`) REFERENCES `especialidad` (`id_especialidad`)
+CREATE TABLE `medico`
+(
+    `id_medico`                      bigint       NOT NULL AUTO_INCREMENT,
+    `tipo_documento`                 enum('CC','PAS','PPT') NOT NULL,
+    `documento_identidad`            varchar(20)  NOT NULL,
+    `tarjeta_profesional`            varchar(20)  NOT NULL,
+    `nombres`                        varchar(100) NOT NULL,
+    `apellidos`                      varchar(100) NOT NULL,
+    `telefono`                       varchar(20)  NOT NULL,
+    `telefono_alternativo`           varchar(20)           DEFAULT NULL,
+    `correo_electronico`             varchar(100) NOT NULL,
+    `correo_electronico_alternativo` varchar(100)          DEFAULT NULL,
+    `fecha_creacion`                 datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `id_especialidad`                bigint       NOT NULL,
+    PRIMARY KEY (`id_medico`),
+    UNIQUE KEY `uq_documento_identidad` (`documento_identidad`),
+    UNIQUE KEY `uq_tarjeta_profesional` (`tarjeta_profesional`),
+    UNIQUE KEY `uq_correo_electronico` (`correo_electronico`),
+    UNIQUE KEY `uq_correo_electronico_alternativo` (`correo_electronico_alternativo`),
+    KEY                              `fk_medico_especialidad` (`id_especialidad`),
+    CONSTRAINT `fk_medico_especialidad` FOREIGN KEY (`id_especialidad`) REFERENCES `especialidad` (`id_especialidad`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ---------------------------------------------------------------------
 -- PACIENTE
 -- ---------------------------------------------------------------------
-CREATE TABLE `paciente` (
-  `id_paciente` bigint NOT NULL AUTO_INCREMENT,
-  `tipo_documento` enum('CC','TI','PAS','PPT') NOT NULL,
-  `documento_identidad` varchar(20) NOT NULL,
-  `nombres` varchar(100) NOT NULL,
-  `apellidos` varchar(100) NOT NULL,
-  `telefono` varchar(20) NOT NULL,
-  `telefono_alternativo` varchar(20) DEFAULT NULL,
-  `correo_electronico` varchar(100) NOT NULL,
-  `correo_electronico_alternativo` varchar(100) DEFAULT NULL,
-  `fecha_nacimiento` date NOT NULL,
-  `fecha_creacion` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id_paciente`),
-  UNIQUE KEY `uq_documento_identidad` (`documento_identidad`),
-  UNIQUE KEY `uq_correo_electronico` (`correo_electronico`),
-  UNIQUE KEY `uq_correo_electronico_alternativo` (`correo_electronico_alternativo`)
+CREATE TABLE `paciente`
+(
+    `id_paciente`                    bigint       NOT NULL AUTO_INCREMENT,
+    `tipo_documento`                 enum('CC','TI','PAS','PPT') NOT NULL,
+    `documento_identidad`            varchar(20)  NOT NULL,
+    `nombres`                        varchar(100) NOT NULL,
+    `apellidos`                      varchar(100) NOT NULL,
+    `telefono`                       varchar(20)  NOT NULL,
+    `telefono_alternativo`           varchar(20)           DEFAULT NULL,
+    `correo_electronico`             varchar(100) NOT NULL,
+    `correo_electronico_alternativo` varchar(100)          DEFAULT NULL,
+    `fecha_nacimiento`               date         NOT NULL,
+    `fecha_creacion`                 datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id_paciente`),
+    UNIQUE KEY `uq_documento_identidad` (`documento_identidad`),
+    UNIQUE KEY `uq_correo_electronico` (`correo_electronico`),
+    UNIQUE KEY `uq_correo_electronico_alternativo` (`correo_electronico_alternativo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ---------------------------------------------------------------------
 -- CITA: depende de MEDICO y PACIENTE, por eso se crea de última
 -- ---------------------------------------------------------------------
-CREATE TABLE `cita` (
-  `id_cita` bigint NOT NULL AUTO_INCREMENT,
-  `id_medico` bigint NOT NULL,
-  `id_paciente` bigint NOT NULL,
-  `estado_cita` enum('PROGRAMADA','CONFIRMADA','CANCELADA','COMPLETADA') NOT NULL DEFAULT 'PROGRAMADA',
-  `motivo_cita` varchar(500) NOT NULL,
-  `fecha_cita` datetime NOT NULL,
-  `fecha_creacion` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id_cita`),
-  UNIQUE KEY `uq_medico_cita` (`id_medico`,`fecha_cita`),
-  UNIQUE KEY `uq_paciente_cita` (`id_paciente`,`fecha_cita`),
-  CONSTRAINT `fk_cita_medico` FOREIGN KEY (`id_medico`) REFERENCES `medico` (`id_medico`),
-  CONSTRAINT `fk_cita_paciente` FOREIGN KEY (`id_paciente`) REFERENCES `paciente` (`id_paciente`)
+CREATE TABLE `cita`
+(
+    `id_cita`        bigint       NOT NULL AUTO_INCREMENT,
+    `id_medico`      bigint       NOT NULL,
+    `id_paciente`    bigint       NOT NULL,
+    `estado_cita`    enum('PROGRAMADA','CONFIRMADA','CANCELADA','COMPLETADA') NOT NULL DEFAULT 'PROGRAMADA',
+    `motivo_cita`    varchar(500) NOT NULL,
+    `fecha_cita`     datetime     NOT NULL,
+    `fecha_creacion` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id_cita`),
+    UNIQUE KEY `uq_medico_cita` (`id_medico`,`fecha_cita`),
+    UNIQUE KEY `uq_paciente_cita` (`id_paciente`,`fecha_cita`),
+    CONSTRAINT `fk_cita_medico` FOREIGN KEY (`id_medico`) REFERENCES `medico` (`id_medico`),
+    CONSTRAINT `fk_cita_paciente` FOREIGN KEY (`id_paciente`) REFERENCES `paciente` (`id_paciente`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
